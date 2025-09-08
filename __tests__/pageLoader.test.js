@@ -41,11 +41,12 @@ describe('page-loader', () => {
       .reply(200, expectedData);
 
     const expectedFilepath = path.join(tmpdir, 'ru-hexlet-io-courses.html');
+
     const response = await pageLoader('https://ru.hexlet.io/courses', tmpdir);
-    const resultData = await readFile(expectedFilepath);
+    const resultData = await fs.readFile(expectedFilepath, 'utf-8');
 
     expect(scope.isDone()).toBeTruthy();
-    expect(response.filepath).toBe('expectedFilepath');
+    expect(response.filepath).toBe(expectedFilepath);
     expect(resultData).toBe(expectedData);
   });
 });
