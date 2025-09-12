@@ -39,9 +39,10 @@ describe('page-loader', () => {
   test('Should download webpage correctly', async () => {
     const initHtml = await readFixture('init_index.html');
     const expectedHtml = await readFixture('expected_index.html');
-    const expectedImg = await readFixture('nodejs.png');
+    const expectedImg = await readFixture('nodejs.png', 'binary');
 
     const scope = nock('https://ru.hexlet.io')
+      .persist()
       .get('/courses')
       .reply(200, initHtml)
       .get('/assets/professions/nodejs.png')
