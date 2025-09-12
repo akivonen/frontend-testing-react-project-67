@@ -22,15 +22,17 @@ const loadSources = async (url, html, outputDirpath) => {
   await fs.mkdir(assetsFolderpath);
 
   const handleAssets = (el) => {
-    const { origin } = new URL(url);
     const currSrc = $(el).attr('src');
-    const absSrc = currSrc.startsWith('http') ? currSrc : `${origin}${currSrc}`;
+    if (!currSrc) {
+      return;
+    }
+    const absSrc = new URL(currSrc, url).href;
     const extension = path.extname(absSrc);
     const newFilename = getNameByPath(absSrc, extension);
-
     const newSrc = path.join(assetsFolderpath, newFilename);
     const assetsDir = getNameByPath(url, '_files');
     $(el).attr('src', path.join(assetsDir, newFilename));
+
     return { src: absSrc, path: newSrc };
   };
 
@@ -38,15 +40,15 @@ const loadSources = async (url, html, outputDirpath) => {
     .toArray()
     .map((el) => handleAssets(el));
 
+  const downloadAsset = async (src, path) => {
+    const { data } = await axios.get(src, { responseType: 'arraybuffer' });
+    const buffer = Buffer.from(new Uint8Array(data));
+    await fs.writeFile(path, buffer);
+  };
+
   await Promise.all([
     fs.writeFile(htmlPath, $.html()),
-    ...imgList.map(({ src, path }) => {
-      return axios
-        .get(src, { responseType: 'arrayBuffer' })
-        .then(({ data }) => {
-          fs.writeFile(path, data);
-        });
-    }),
+    ...imgList.map(({ src, path }) => downloadAsset(src, path)),
   ]);
 
   return htmlPath;

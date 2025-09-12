@@ -39,14 +39,18 @@ describe('page-loader', () => {
   test('Should download webpage correctly', async () => {
     const initHtml = await readFixture('init_index.html');
     const expectedHtml = await readFixture('expected_index.html');
-    const expectedImg = await readFixture('nodejs.png', 'binary');
+    const expectedImg = await fs.readFile(getFixturePath('nodejs.png'));
+    const expectedLink = await readFixture('application.css');
+    const expectedScript = await readFixture('runtime.js');
 
     const scope = nock('https://ru.hexlet.io')
       .persist()
       .get('/courses')
       .reply(200, initHtml)
       .get('/assets/professions/nodejs.png')
-      .reply(200, expectedImg);
+      .reply(200, expectedImg, {
+        'Content-Type': 'image/png',
+      });
 
     const expectedRootpath = path.join(tmpdir, 'ru-hexlet-io-courses.html');
     const expectedImgPath = path.join(
@@ -57,11 +61,11 @@ describe('page-loader', () => {
 
     const response = await pageLoader('https://ru.hexlet.io/courses', tmpdir);
     const resultHtml = await fs.readFile(expectedRootpath, 'utf-8');
-    const resultImg = await fs.readFile(expectedImgPath, 'utf-8');
+    const resultImg = await fs.readFile(expectedImgPath);
 
     expect(scope.isDone()).toBeTruthy();
     expect(response.filepath).toBe(expectedRootpath);
     expect(resultHtml).toBe(expectedHtml);
-    expect(resultImg).toBe(expectedImg);
+    expect(resultImg.equals(expectedImg)).toBe(true);
   });
 });
