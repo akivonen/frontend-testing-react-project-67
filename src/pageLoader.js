@@ -3,6 +3,12 @@ import fs from 'fs/promises';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 
+const sources = {
+  img: 'src',
+  script: 'src',
+  link: 'href',
+};
+
 export const getNameByPath = (url, extension) => {
   const filename = url
     .toLowerCase()
@@ -12,43 +18,63 @@ export const getNameByPath = (url, extension) => {
   return `${filename}${extension}`;
 };
 
-const loadSources = async (url, html, outputDirpath) => {
+const getURL = (host, link) => {
+  if (/^https?:\/\//.test(link)) {
+    return link;
+  }
+  return new URL(link, host).toString();
+};
+
+const getAssetsList = ($, handleAsset) => {
+  return Object.entries(sources)
+    .map(([tag, srcAttr]) => {
+      return $(tag)
+        .toArray()
+        .map((el) => handleAsset(el, srcAttr, tag));
+    })
+    .flat()
+    .filter((x) => x);
+};
+
+const downloadAsset = async (src, path) => {
+  const { data } = await axios.get(src, {
+    responseType: 'arraybuffer',
+  });
+  await fs.writeFile(path, Buffer.from(data));
+};
+
+const loadSources = async (hostname, html, outputDirpath) => {
   const $ = cheerio.load(html);
-  const htmlPath = path.join(outputDirpath, getNameByPath(url, '.html'));
   const assetsFolderpath = path.join(
     outputDirpath,
-    getNameByPath(url, '_files')
+    getNameByPath(hostname, '_files')
   );
-  await fs.mkdir(assetsFolderpath);
+  await fs.mkdir(assetsFolderpath, { recursive: true });
+  const htmlPath = path.join(outputDirpath, getNameByPath(hostname, '.html'));
 
-  const handleAssets = (el) => {
-    const currSrc = $(el).attr('src');
+  const handleAsset = (el, srcAttr, tag) => {
+    const currSrc = $(el).attr(srcAttr);
     if (!currSrc) {
       return;
     }
-    const absSrc = new URL(currSrc, url).href;
+    const absSrc = getURL(hostname, currSrc);
+    if (new URL(hostname).hostname !== new URL(absSrc).hostname) {
+      return;
+    }
     const extension = path.extname(absSrc);
-    const newFilename = getNameByPath(absSrc, extension);
+    const newFilename = getNameByPath(absSrc, extension || '.html');
     const newSrc = path.join(assetsFolderpath, newFilename);
-    const assetsDir = getNameByPath(url, '_files');
-    $(el).attr('src', path.join(assetsDir, newFilename));
+    const assetsDir = getNameByPath(hostname, '_files');
+    $(el).attr(srcAttr, path.join(assetsDir, newFilename));
 
-    return { src: absSrc, path: newSrc };
+    return { src: absSrc, path: newSrc, tag };
   };
 
-  const imgList = $('img')
-    .toArray()
-    .map((el) => handleAssets(el));
-
-  const downloadAsset = async (src, path) => {
-    const { data } = await axios.get(src, { responseType: 'arraybuffer' });
-    const buffer = Buffer.from(new Uint8Array(data));
-    await fs.writeFile(path, buffer);
-  };
+  const assetsList = getAssetsList($, handleAsset);
 
   await Promise.all([
     fs.writeFile(htmlPath, $.html()),
-    ...imgList.map(({ src, path }) => downloadAsset(src, path)),
+    ...assetsList.map(({ src, path }) => downloadAsset(src, path)),
   ]);
 
   return htmlPath;
