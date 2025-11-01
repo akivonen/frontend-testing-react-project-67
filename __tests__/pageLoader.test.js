@@ -111,6 +111,12 @@ describe('page-loader', () => {
     });
   });
   describe('pageLoader negative cases', () => {
+    test('should throw error on invalid link', async () => {
+      await expect(pageLoader('invalidLink', tmpdir)).rejects.toThrow(
+        /Invalid link provided/
+      );
+    });
+
     test('should throw 404 on wrong path', async () => {
       nock(host).get('/wrongpath').reply(404);
       await expect(
