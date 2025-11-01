@@ -46,11 +46,16 @@ export default loadSources = async (hostname, html, outputDirpath) => {
   };
 
   const assetsList = getAssetsList($, handleAsset, sources);
-  await fs.writeFile(htmlPath, $.html());
-  log(`Saved HTML file: ${htmlPath}`);
+  fs.writeFile(htmlPath, $.html())
+    .then(() => log(`Saved HTML file: ${htmlPath}`))
+    .catch((e) => {
+      handleError(e, `Error while saving html: `, true);
+    });
   await Promise.all(
     assetsList.map(({ src, path }) => downloadAsset(src, path))
-  );
+  ).catch((e) => {
+    handleError(e, `Error handling assets: `, true);
+  });
   log(`Downloaded ${assetsList.length} assets`);
   return htmlPath;
 };

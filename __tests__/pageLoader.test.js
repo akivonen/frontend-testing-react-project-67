@@ -6,7 +6,8 @@ import { afterAll, afterEach, beforeEach, describe } from '@jest/globals';
 import pageLoader, { getNameByPath } from '../src/pageLoader.js';
 import { fileURLToPath } from 'url';
 
-const testUrl = 'https://ru.hexlet.io/courses';
+const host = 'https://ru.hexlet.io';
+const testUrl = `${host}/courses`;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -70,14 +71,14 @@ describe('page-loader', () => {
     });
   });
 
-  describe('pageLoader', () => {
+  describe('pageLoader positive cases', () => {
     beforeAll(async () => {
       expectedHtml = await fs.readFile(
         getFixturePath('expected_index.html'),
         'utf-8'
       );
       resources.forEach((asset) => {
-        scope = nock('https://ru.hexlet.io')
+        scope = nock(host)
           .persist()
           .get(asset.path)
           .reply(
@@ -107,6 +108,63 @@ describe('page-loader', () => {
       );
 
       expect(expectedAsset.equals(actualAsset)).toBe(true);
+    });
+  });
+  describe('pageLoader negative cases', () => {
+    test('should throw 404 on wrong path', async () => {
+      nock(host).get('/wrongpath').reply(404);
+      await expect(
+        pageLoader(path.join(host, '/wrongpath'), tmpdir)
+      ).rejects.toThrow(/404/);
+    });
+
+    beforeEach(async () => {
+      scope = nock(host)
+        .get('/courses')
+        .reply(
+          200,
+          async () => await fs.readFile(getFixturePath(asset.fixtureName))
+        );
+    });
+
+    test('should handle filesystem error with not existing dir', async () => {
+      nock(host)
+        .get('/courses')
+        .reply(
+          200,
+          async () => await fs.readFile(getFixturePath(asset.fixtureName))
+        );
+
+      await expect(pageLoader(testUrl, 'notExistingDir')).rejects.toThrow(
+        /does not exist/
+      );
+    });
+
+    test('should handle filesystem error with non-writable dir', async () => {
+      const readOnlyDir = path.join(tmpdir, 'readOnly');
+
+      await fs.mkdir(readOnlyDir);
+      await fs.chmod(readOnlyDir, 0o555);
+
+      await expect(pageLoader(testUrl, readOnlyDir)).rejects.toThrow(
+        /not writable/
+      );
+
+      await fs.chmod(readOnlyDir, 0o777);
+    });
+
+    test('should handle network error', async () => {
+      nock(host).get('/courses').replyWithError('Network error');
+
+      await expect(pageLoader(testUrl, tmpdir)).rejects.toThrow(
+        /Network Error/
+      );
+    });
+
+    test('should handle asset download error', async () => {
+      nock(host).get('/assets/professions/nodejs.png').reply(404);
+
+      await expect(pageLoader(testUrl, tmpdir)).rejects.toThrow(/404/);
     });
   });
 });

@@ -4,6 +4,7 @@ import debug from 'debug';
 import 'axios-debug-log';
 import { handleError } from './lib/utils';
 import loadSources from './loadSources';
+import fs from 'fs/promises';
 
 const log = debug('page-loader');
 
