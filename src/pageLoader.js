@@ -2,8 +2,8 @@ import path from 'path';
 import axios from 'axios';
 import debug from 'debug';
 import 'axios-debug-log';
-import { handleError } from './lib/utils';
-import loadSources from './loadSources';
+import { handleError } from './lib/util.js';
+import loadSources from './loadSources.js';
 import fs from 'fs/promises';
 
 const log = debug('page-loader');

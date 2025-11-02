@@ -1,10 +1,15 @@
 import path from 'path';
 import fs from 'fs/promises';
 import * as cheerio from 'cheerio';
-import { handleError, getURL, getAssetsList, downloadAsset } from './lib/utils';
-import { getNameByPath } from './pageLoader';
+import {
+  handleError,
+  getURL,
+  getAssetsList,
+  downloadAsset,
+} from './lib/utils.js';
+import { getNameByPath } from './pageLoader.js';
 import debug from 'debug';
-import { SOURCES } from './constants';
+import { SOURCES } from './constants.js';
 
 const log = debug('page-loader');
 

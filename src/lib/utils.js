@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import axios from 'axios';
 import debug from 'debug';
-import { SOURCES, ERROR_CODE_MESSAGES } from '../constants';
+import { SOURCES, ERROR_CODE_MESSAGES } from '../constants.js';
 
 const log = debug('page-loader');
 
