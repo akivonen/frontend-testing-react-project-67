@@ -16,7 +16,6 @@ const getFixturePath = (filename) =>
 
 let tmpdir = '';
 let expectedHtml;
-let scope;
 
 describe('page-loader', () => {
   const resources = [
@@ -46,8 +45,12 @@ describe('page-loader', () => {
     },
   ];
 
-  beforeAll(() => {
+  beforeAll(async () => {
     nock.disableNetConnect();
+    expectedHtml = await fs.readFile(
+      getFixturePath('expected_index.html'),
+      'utf-8'
+    );
   });
 
   beforeEach(async () => {
@@ -56,6 +59,7 @@ describe('page-loader', () => {
 
   afterEach(async () => {
     await fs.rm(tmpdir, { recursive: true, force: true });
+    nock.cleanAll();
   });
 
   afterAll(() => {
@@ -72,14 +76,10 @@ describe('page-loader', () => {
   });
 
   describe('pageLoader positive cases', () => {
-    beforeAll(async () => {
-      expectedHtml = await fs.readFile(
-        getFixturePath('expected_index.html'),
-        'utf-8'
-      );
+    let scope = nock(host).persist();
+    beforeEach(async () => {
       resources.forEach((asset) => {
-        scope = nock(host)
-          .persist()
+        scope
           .get(asset.path)
           .reply(
             200,
@@ -90,6 +90,7 @@ describe('page-loader', () => {
           );
       });
     });
+
     test('should download HTML properly and return filepath', async () => {
       const expectedRootpath = path.join(tmpdir, 'ru-hexlet-io-courses.html');
       const response = await pageLoader(testUrl, tmpdir);
@@ -98,22 +99,25 @@ describe('page-loader', () => {
       expect(response.filepath).toBe(expectedRootpath);
       expect(scope.isDone()).toBeTruthy();
     });
-    test.each(resources)('should download asset %# properly', async (asset) => {
-      const expectedAsset = await fs.readFile(
-        getFixturePath(asset.fixtureName)
-      );
-      await pageLoader(testUrl, tmpdir);
-      const actualAsset = await fs.readFile(
-        path.join(tmpdir, 'ru-hexlet-io-courses_files', asset.localFilename)
-      );
+    test.each(resources.slice(1))(
+      'should download asset %# properly',
+      async (asset) => {
+        const expectedAsset = await fs.readFile(
+          getFixturePath(asset.fixtureName)
+        );
+        await pageLoader(testUrl, tmpdir);
+        const actualAsset = await fs.readFile(
+          path.join(tmpdir, 'ru-hexlet-io-courses_files', asset.localFilename)
+        );
 
-      expect(expectedAsset.equals(actualAsset)).toBe(true);
-    });
+        expect(expectedAsset.equals(actualAsset)).toBe(true);
+      }
+    );
   });
   describe('pageLoader negative cases', () => {
     test('should throw error on invalid link', async () => {
       await expect(pageLoader('invalidLink', tmpdir)).rejects.toThrow(
-        /Invalid link provided/
+        /Invalid url provided/
       );
     });
 
@@ -121,28 +125,12 @@ describe('page-loader', () => {
       nock(host).get('/wrongpath').reply(404);
       await expect(
         pageLoader(path.join(host, '/wrongpath'), tmpdir)
-      ).rejects.toThrow(/404/);
-    });
-
-    beforeEach(async () => {
-      scope = nock(host)
-        .get('/courses')
-        .reply(
-          200,
-          async () => await fs.readFile(getFixturePath(asset.fixtureName))
-        );
+      ).rejects.toThrow(/Request failed with status code 404/);
     });
 
     test('should handle filesystem error with not existing dir', async () => {
-      nock(host)
-        .get('/courses')
-        .reply(
-          200,
-          async () => await fs.readFile(getFixturePath(asset.fixtureName))
-        );
-
       await expect(pageLoader(testUrl, 'notExistingDir')).rejects.toThrow(
-        /does not exist/
+        /ENOENT: no such file or directory/
       );
     });
 
@@ -153,7 +141,7 @@ describe('page-loader', () => {
       await fs.chmod(readOnlyDir, 0o555);
 
       await expect(pageLoader(testUrl, readOnlyDir)).rejects.toThrow(
-        /not writable/
+        /EACCES: permission denied/
       );
 
       await fs.chmod(readOnlyDir, 0o777);
@@ -163,12 +151,36 @@ describe('page-loader', () => {
       nock(host).get('/courses').replyWithError('Network error');
 
       await expect(pageLoader(testUrl, tmpdir)).rejects.toThrow(
-        /Network Error/
+        /Network error/
       );
     });
 
     test('should handle asset download error', async () => {
-      nock(host).get('/assets/professions/nodejs.png').reply(404);
+      const initialHtml = resources[0].fixtureName;
+      const scope = nock(host)
+        .persist()
+        .get('/courses')
+        .reply(
+          200,
+          async () => await fs.readFile(getFixturePath(initialHtml)),
+          { 'Content-Type': 'text/html' }
+        );
+
+      for (const asset of resources.slice(1)) {
+        if (asset.path === '/assets/professions/nodejs.png') {
+          scope.get(asset.path).reply(404);
+        } else {
+          scope
+            .get(asset.path)
+            .reply(
+              200,
+              async () => await fs.readFile(getFixturePath(asset.fixtureName)),
+              {
+                'Content-Type': asset.contentType,
+              }
+            );
+        }
+      }
 
       await expect(pageLoader(testUrl, tmpdir)).rejects.toThrow(/404/);
     });

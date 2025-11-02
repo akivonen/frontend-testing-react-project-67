@@ -13,7 +13,7 @@ export const sources = {
   link: 'href',
 };
 
-export default loadSources = async (hostname, html, outputDirpath) => {
+const loadSources = async (hostname, html, outputDirpath) => {
   const $ = cheerio.load(html);
   const assetsFolderpath = path.join(
     outputDirpath,
@@ -59,3 +59,5 @@ export default loadSources = async (hostname, html, outputDirpath) => {
   log(`Downloaded ${assetsList.length} assets`);
   return htmlPath;
 };
+
+export default loadSources;
