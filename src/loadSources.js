@@ -4,14 +4,9 @@ import * as cheerio from 'cheerio';
 import { handleError, getURL, getAssetsList, downloadAsset } from './lib/utils';
 import { getNameByPath } from './pageLoader';
 import debug from 'debug';
+import { SOURCES } from './constants';
 
 const log = debug('page-loader');
-
-export const sources = {
-  img: 'src',
-  script: 'src',
-  link: 'href',
-};
 
 const loadSources = async (hostname, html, outputDirpath) => {
   const $ = cheerio.load(html);
@@ -45,7 +40,7 @@ const loadSources = async (hostname, html, outputDirpath) => {
     return { src: absSrc, path: newSrc, tag };
   };
 
-  const assetsList = getAssetsList($, handleAsset, sources);
+  const assetsList = getAssetsList($, handleAsset, SOURCES);
   fs.writeFile(htmlPath, $.html())
     .then(() => log(`Saved HTML file: ${htmlPath}`))
     .catch((e) => {

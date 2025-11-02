@@ -1,12 +1,15 @@
 import fs from 'fs/promises';
 import axios from 'axios';
 import debug from 'debug';
-import { sources } from '../loadSources';
+import { SOURCES, ERROR_CODE_MESSAGES } from '../constants';
 
 const log = debug('page-loader');
 
+const getErrorMessage = (error) =>
+  ERROR_CODE_MESSAGES[error.code] || error.message;
+
 export const handleError = (error, context, shouldThrow = false) => {
-  const msg = error instanceof Error ? error.message : String(error);
+  const msg = error instanceof Error ? getErrorMessage(error) : String(error);
   log(`${context}: ${msg}`);
   if (shouldThrow) {
     throw error;
@@ -21,7 +24,7 @@ export const getURL = (host, link) => {
 };
 
 export const getAssetsList = ($, handleAsset) => {
-  return Object.entries(sources)
+  return Object.entries(SOURCES)
     .map(([tag, srcAttr]) => {
       return $(tag)
         .toArray()
