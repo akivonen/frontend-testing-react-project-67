@@ -14,7 +14,8 @@ program
   .action(async (url, options) => {
     console.log('Loading website...');
     try {
-      await pageLoader(url, options.output);
+      const { filepath } = await pageLoader(url, options.output);
+      console.log(filepath);
       process.exit(0);
     } catch (e) {
       console.error(e instanceof Error ? e.message : 'Unknown error occurred');
