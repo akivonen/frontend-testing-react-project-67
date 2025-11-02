@@ -12,7 +12,6 @@ program
     process.cwd()
   )
   .action(async (url, options) => {
-    console.log('Loading website...');
     try {
       const { filepath } = await pageLoader(url, options.output);
       console.log(filepath);
