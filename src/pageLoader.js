@@ -2,7 +2,7 @@ import path from 'path';
 import axios from 'axios';
 import debug from 'debug';
 import 'axios-debug-log';
-import { handleError } from './lib/util.js';
+import { handleError } from './lib/utils.js';
 import loadSources from './loadSources.js';
 import fs from 'fs/promises';
 
