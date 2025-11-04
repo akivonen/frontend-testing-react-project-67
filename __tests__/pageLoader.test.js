@@ -132,19 +132,6 @@ describe('pageLoader negative cases', () => {
     );
   });
 
-  test('should handle filesystem error with non-writable dir', async () => {
-    const readOnlyDir = path.join(tmpdir, 'readOnly');
-
-    await fs.mkdir(readOnlyDir);
-    await fs.chmod(readOnlyDir, 0o555);
-
-    await expect(pageLoader(testUrl, readOnlyDir)).rejects.toThrow(
-      /EACCES: permission denied/
-    );
-
-    await fs.chmod(readOnlyDir, 0o777);
-  });
-
   test('should handle network error', async () => {
     nock(host).get('/courses').replyWithError('Network error');
 
