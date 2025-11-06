@@ -15,17 +15,20 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "npx jest --verbose",
-    "test:debug": "DEBUG=nock.* npx jest --runInBand --verbose",
+    "test": "npx jest",
+    "test:debug": "DEBUG=nock.* npx jest --runInBand",
     "start": "node bin/page-loader.js"
   },
   "bin": {
     "page-loader": "/bin/page-loader.js"
   },
   "jest": {
-    "setupFilesAfterEnv": [
-      "<rootDir>/jest.setup.js"
-    ]
+    "testEnvironment": "node",
+    "transform": {},
+    "verbose": true,
+    "globals": {
+      "jest": true
+    }
   },
   "dependencies": {
     "axios": "^1.11.0",
