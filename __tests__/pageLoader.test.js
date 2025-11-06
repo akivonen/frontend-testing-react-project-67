@@ -2,7 +2,6 @@ import path from 'path';
 import fs from 'fs/promises';
 import nock from 'nock';
 import os from 'os';
-import { afterAll, afterEach, beforeEach, describe } from '@jest/globals';
 import pageLoader, { getNameByPath } from '../src/pageLoader.js';
 import { fileURLToPath } from 'url';
 
