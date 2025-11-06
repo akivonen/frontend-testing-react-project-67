@@ -25,7 +25,8 @@
   "jest": {
     "testEnvironment": "node",
     "transform": {},
-    "verbose": true
+    "verbose": true,
+    "globals": {}
   },
   "dependencies": {
     "axios": "^1.11.0",
@@ -47,6 +48,7 @@
     "eslint-plugin-jest": "26.8.3",
     "jest": "29.6.2",
     "jest-cli": "29.6.2",
+    "jest-environment-node": "^29.6.2",
     "nock": "13.3.2"
   }
 }
