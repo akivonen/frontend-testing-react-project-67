@@ -1,9 +1,11 @@
+/* eslint-disable no-return-await */
 import path from 'path';
 import fs from 'fs/promises';
 import nock from 'nock';
 import os from 'os';
-import pageLoader, { getNameByPath } from '../src/pageLoader.js';
 import { fileURLToPath } from 'url';
+import pageLoader from '../src/pageLoader.js';
+import { getNameByPath } from '../src/lib/utils.js';
 
 const host = 'https://ru.hexlet.io';
 const testUrl = `${host}/courses`;
@@ -146,7 +148,7 @@ describe('pageLoader negative cases', () => {
         'Content-Type': 'text/html',
       });
 
-    for (const asset of resources.slice(1)) {
+    resources.slice(1).forEach((asset) => {
       if (asset.path === '/assets/professions/nodejs.png') {
         scope.get(asset.path).reply(404);
       } else {
@@ -160,7 +162,7 @@ describe('pageLoader negative cases', () => {
             }
           );
       }
-    }
+    });
 
     await expect(pageLoader(testUrl, tmpdir)).rejects.toThrow(/404/);
   });

@@ -1,28 +1,20 @@
-import path from 'path';
 import axios from 'axios';
 import debug from 'debug';
 import 'axios-debug-log';
+import fs from 'fs/promises';
 import { handleError } from './lib/utils.js';
 import loadSources from './loadSources.js';
-import fs from 'fs/promises';
 
 const log = debug('page-loader');
 
-export const getNameByPath = (url, extension) => {
-  const filename = url
-    .toLowerCase()
-    .replace(/https?:\/\//, '')
-    .replace(path.extname(url), '')
-    .replace(/[^0-9a-z]/gi, '-');
-  return `${filename}${extension}`;
-};
-
+// eslint-disable-next-line consistent-return
 export default async function pageLoader(url, outputDirpath = process.cwd()) {
   if (!url) {
     throw new Error('No url provided');
   }
 
   try {
+    // eslint-disable-next-line no-new
     new URL(url);
   } catch (e) {
     throw new Error(`Invalid url provided: ${url}. ${e.message}`);

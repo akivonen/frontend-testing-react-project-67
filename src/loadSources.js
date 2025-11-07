@@ -1,14 +1,15 @@
 import path from 'path';
 import fs from 'fs/promises';
 import * as cheerio from 'cheerio';
+import debug from 'debug';
 import {
   handleError,
   getURL,
   getAssetsList,
   downloadAsset,
+  getNameByPath,
 } from './lib/utils.js';
-import { getNameByPath } from './pageLoader.js';
-import debug from 'debug';
+
 import { SOURCES } from './constants.js';
 
 const log = debug('page-loader');
@@ -30,11 +31,11 @@ const loadSources = async (hostname, html, outputDirpath) => {
   const handleAsset = (el, srcAttr, tag) => {
     const currSrc = $(el).attr(srcAttr);
     if (!currSrc) {
-      return;
+      return undefined;
     }
     const absSrc = getURL(hostname, currSrc);
     if (new URL(hostname).hostname !== new URL(absSrc).hostname) {
-      return;
+      return undefined;
     }
     const extension = path.extname(absSrc);
     const newFilename = getNameByPath(absSrc, extension || '.html');
@@ -42,7 +43,7 @@ const loadSources = async (hostname, html, outputDirpath) => {
     const assetsDir = getNameByPath(hostname, '_files');
     $(el).attr(srcAttr, path.posix.join(assetsDir, newFilename));
 
-    return { src: absSrc, path: newSrc, tag };
+    return { src: absSrc, filepath: newSrc, tag };
   };
 
   const assetsList = getAssetsList($, handleAsset, SOURCES);
@@ -52,7 +53,7 @@ const loadSources = async (hostname, html, outputDirpath) => {
       handleError(e, `Error while saving html: `, true);
     });
   await Promise.all(
-    assetsList.map(({ src, path }) => downloadAsset(src, path))
+    assetsList.map(({ src, filepath }) => downloadAsset(src, filepath))
   ).catch((e) => {
     handleError(e, `Error handling assets: `, true);
   });
